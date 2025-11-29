@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Knowledge Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .tech-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin: 0 5px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        /* Chat Section */
+        .chat-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .chat-section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chat-messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background: white;
+            margin-bottom: 15px;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+        
+        .message.user {
+            background: #e3f2fd;
+            margin-left: auto;
+            border-bottom-right-radius: 2px;
+        }
+        
+        .message.ai {
+            background: #f5f5f5;
+            margin-right: auto;
+            border-bottom-left-radius: 2px;
+        }
+        
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+        
+        /* Feature Buttons */
+        .feature-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .feature-btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .feature-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .feature-btn.active {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+        }
+        
+        /* Feature Sections */
+        .feature-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+            display: none;
+        }
+        
+        .feature-section.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .feature-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            background: #ecf0f1;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+        
+        .upload-area:hover {
+            background: #d6dbdf;
+            border-color: #2980b9;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+            margin-bottom: 10px;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .response-box {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            min-height: 100px;
+        }
+        
+        .document-selector {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #3498db;
+        }
+        
+        .stat-label {
+            font-size: 0.8em;
+            color: #7f8c8d;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .feature-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .chat-input-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Knowledge Assistant</h1>
+            <p>
+                <span class="tech-badge">Node.js</span>
+                <span class="tech-badge">LangChain</span>
+                <span class="tech-badge">OpenRouter</span>
+            </p>
+            <p>Chat with AI and access powerful document processing features</p>
+        </div>
+        
+        <div class="content">
+            <!-- AI Chat Section (Always Visible) -->
+            <div class="chat-section">
+                <h2>💬 AI Chatbot</h2>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message ai">
+                        <strong>AI Assistant:</strong> Hello! I'm your AI assistant. How can I help you today? You can ask me questions or use the features below for document processing.
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="Type your message here...">
+                    <button onclick="sendChatMessage()">📤 Send</button>
+                </div>
+            </div>
+            
+            <!-- Feature Toggle Buttons -->
+            <div class="feature-buttons">
+                <button class="feature-btn active" onclick="showFeature('file-feature')">
+                    📁 Upload & Process Files
+                </button>
+                <button class="feature-btn" onclick="showFeature('text-feature')">
+                    📝 Summarize Text
+                </button>
+                <button class="feature-btn" onclick="showFeature('general-feature')">
+                    💭 General Chat
+                </button>
+            </div>
+            
+            <!-- File Upload & Process Feature -->
+            <div class="feature-section active" id="file-feature">
+                <h3>📁 Upload & Process Documents</h3>
+                
+                <!-- Upload Section -->
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <input type="file" id="fileInput" accept=".pdf" onchange="handleFileSelect()" style="display: none;">
+                    <div style="font-size: 3em; margin-bottom: 10px;">📄</div>
+                    Click to select PDF files<br>
+                    <small>or drag and drop here</small>
+                </div>
+                <button onclick="uploadFile()">🚀 Upload & Process</button>
+                <div id="uploadStatus" class="status"></div>
+                
+                <!-- Document Statistics -->
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="docCount">0</div>
+                        <div class="stat-label">Documents</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="chunkCount">0</div>
+                        <div class="stat-label">Text Chunks</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">✓</div>
+                        <div class="stat-label">LangChain</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">✓</div>
+                        <div class="stat-label">OpenRouter</div>
+                    </div>
+                </div>
+                
+                <!-- Ask Questions -->
+                <div style="margin-top: 20px;">
+                    <h4>❓ Ask Questions About Documents</h4>
+                    <div class="document-selector">
+                        <label>Select Document:</label>
+                        <select id="askDocumentSelect">
+                            <option value="">All Documents</option>
+                        </select>
+                    </div>
+                    <input type="text" id="questionInput" placeholder="Ask a question about your documents...">
+                    <button onclick="askQuestion()">🔍 Get Answer</button>
+                    <div class="response-box" id="answerResponse">
+                        Questions and answers will appear here...
+                    </div>
+                </div>
+                
+                <!-- Summarize Documents -->
+                <div style="margin-top: 20px;">
+                    <h4>📋 Summarize Uploaded Files</h4>
+                    <div class="document-selector">
+                        <label>Select Document to Summarize:</label>
+                        <select id="summarizeDocumentSelect">
+                            <option value="">First Document</option>
+                        </select>
+                    </div>
+                    <button onclick="summarizeDocument()">📄 Generate Summary</button>
+                    <div class="response-box" id="summaryResponse">
+                        Document summaries will appear here...
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Text Summarize Feature -->
+            <div class="feature-section" id="text-feature">
+                <h3>📝 Summarize Custom Text</h3>
+                <p>Paste any text below and get an AI-powered summary:</p>
+                <textarea id="textInput" rows="6" placeholder="Paste your text here..."></textarea>
+                <button onclick="summarizeText()">📋 Generate Summary</button>
+                <div class="response-box" id="textSummaryResponse">
+                    Your text summary will appear here...
+                </div>
+            </div>
+            
+            <!-- General Chat Feature -->
+            <div class="feature-section" id="general-feature">
+                <h3>💭 General AI Chat</h3>
+                <p>Have a conversation with the AI assistant about anything:</p>
+                <div class="chat-messages" id="generalChatMessages" style="height: 200px;">
+                    <div class="message ai">
+                        <strong>AI Assistant:</strong> Hello! I'm here to help with any questions or conversations you'd like to have.
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" class="chat-input" id="generalChatInput" placeholder="Type your message...">
+                    <button onclick="sendGeneralChat()">📤 Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        let documents = [];
+        let chatHistory = [];
+        let generalChatHistory = [];
+        
+        // Feature toggle function
+        function showFeature(featureId) {
+            // Hide all features
+            document.querySelectorAll('.feature-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.feature-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected feature
+            document.getElementById(featureId).classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+        
+        function handleFileSelect() {
+            const fileInput = document.getElementById('fileInput');
+            selectedFile = fileInput.files[0];
+            
+            if (selectedFile) {
+                document.querySelector('.upload-area').innerHTML = 
+                    `<div style="font-size: 3em; margin-bottom: 10px;">📄</div>
+                     Selected: ${selectedFile.name}<br>
+                     <small>Click upload button to process</small>
+                     <input type="file" id="fileInput" accept=".pdf" onchange="handleFileSelect()" style="display: none;">`;
+            }
+        }
+        
+        async function uploadFile() {
+            if (!selectedFile) {
+                showStatus('uploadStatus', 'Please select a PDF file first!', 'error');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            
+            showStatus('uploadStatus', '📤 Uploading and processing...', 'info');
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showStatus('uploadStatus', 
+                        `✅ ${data.message}<br>
+                         📄 File: ${data.document.filename}<br>
+                         📝 Text Length: ${data.document.textLength} characters`, 
+                        'success');
+                    updateDocuments();
+                    
+                    // Add to chat
+                    addChatMessage('ai', `I've successfully processed your document "${data.document.filename}". You can now ask questions about it or generate a summary.`);
+                } else {
+                    showStatus('uploadStatus', `❌ Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('uploadStatus', '❌ Upload failed: ' + error.message, 'error');
+            }
+        }
+        
+        async function askQuestion() {
+            const questionInput = document.getElementById('questionInput');
+            const documentSelect = document.getElementById('askDocumentSelect');
+            const question = questionInput.value.trim();
+            
+            if (!question) {
+                alert('Please enter a question');
+                return;
+            }
+            
+            const answerResponse = document.getElementById('answerResponse');
+            answerResponse.innerHTML = '🤔 Searching documents and generating answer...';
+            
+            try {
+                const payload = {
+                    question: question,
+                    documentId: documentSelect.value || undefined
+                };
+                
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    answerResponse.innerHTML = `
+                        <strong>Question:</strong> ${data.question}<br><br>
+                        <strong>Answer:</strong> ${data.answer}
+                    `;
+                    
+                    // Add to chat
+                    addChatMessage('user', `Question about documents: ${question}`);
+                    addChatMessage('ai', data.answer);
+                } else {
+                    answerResponse.innerHTML = `❌ Error: ${data.error}`;
+                }
+            } catch (error) {
+                answerResponse.innerHTML = '❌ Failed to get answer';
+            }
+        }
+        
+        async function summarizeDocument() {
+            const documentSelect = document.getElementById('summarizeDocumentSelect');
+            
+            const summaryResponse = document.getElementById('summaryResponse');
+            summaryResponse.innerHTML = '📋 Generating document summary...';
+            
+            try {
+                const payload = {
+                    documentId: documentSelect.value || undefined
+                };
+                
+                const response = await fetch('/summarize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    summaryResponse.innerHTML = `
+                        <strong>Document:</strong> ${data.document.filename}<br>
+                        <strong>Original:</strong> ${data.originalLength} characters<br>
+                        <strong>Summary:</strong> ${data.summaryLength} characters<br><br>
+                        ${data.summary}
+                    `;
+                    
+                    // Add to chat
+                    addChatMessage('user', `Please summarize the document: ${data.document.filename}`);
+                    addChatMessage('ai', `Here's the summary of "${data.document.filename}":\n\n${data.summary}`);
+                } else {
+                    summaryResponse.innerHTML = `❌ Error: ${data.error}`;
+                }
+            } catch (error) {
+                summaryResponse.innerHTML = '❌ Summarization failed';
+            }
+        }
+        
+        async function summarizeText() {
+            const textInput = document.getElementById('textInput');
+            const text = textInput.value.trim();
+            
+            if (!text) {
+                alert('Please enter text to summarize');
+                return;
+            }
+            
+            const textSummaryResponse = document.getElementById('textSummaryResponse');
+            textSummaryResponse.innerHTML = '📋 Generating text summary...';
+            
+            try {
+                const response = await fetch('/summarize-text', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    textSummaryResponse.innerHTML = `
+                        <strong>Original:</strong> ${data.originalLength} characters<br>
+                        <strong>Summary:</strong> ${data.summaryLength} characters<br><br>
+                        ${data.summary}
+                    `;
+                } else {
+                    textSummaryResponse.innerHTML = `❌ Error: ${data.error}`;
+                }
+            } catch (error) {
+                textSummaryResponse.innerHTML = '❌ Text summarization failed';
+            }
+        }
+        
+        async function sendChatMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const message = chatInput.value.trim();
+            
+            if (!message) {
+                alert('Please enter a message');
+                return;
+            }
+            
+            addChatMessage('user', message);
+            chatInput.value = '';
+            
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addChatMessage('ai', data.response);
+                } else {
+                    addChatMessage('ai', `Sorry, I encountered an error: ${data.error}`);
+                }
+            } catch (error) {
+                addChatMessage('ai', 'Sorry, I encountered an error while processing your message.');
+            }
+        }
+        
+        async function sendGeneralChat() {
+            const chatInput = document.getElementById('generalChatInput');
+            const message = chatInput.value.trim();
+            
+            if (!message) {
+                alert('Please enter a message');
+                return;
+            }
+            
+            addGeneralChatMessage('user', message);
+            chatInput.value = '';
+            
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addGeneralChatMessage('ai', data.response);
+                } else {
+                    addGeneralChatMessage('ai', `Sorry, I encountered an error: ${data.error}`);
+                }
+            } catch (error) {
+                addGeneralChatMessage('ai', 'Sorry, I encountered an error while processing your message.');
+            }
+        }
+        
+        function addChatMessage(sender, content) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.innerHTML = `<strong>${sender === 'user' ? 'You' : 'AI Assistant'}:</strong> ${content}`;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function addGeneralChatMessage(sender, content) {
+            const chatMessages = document.getElementById('generalChatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.innerHTML = `<strong>${sender === 'user' ? 'You' : 'AI Assistant'}:</strong> ${content}`;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = message;
+            element.className = `status ${type}`;
+        }
+        
+        async function updateDocuments() {
+            try {
+                const response = await fetch('/documents');
+                const data = await response.json();
+                
+                documents = data.documents;
+                document.getElementById('docCount').textContent = data.total;
+                
+                // Update document selectors
+                const askSelect = document.getElementById('askDocumentSelect');
+                const summarizeSelect = document.getElementById('summarizeDocumentSelect');
+                
+                askSelect.innerHTML = '<option value="">All Documents</option>';
+                summarizeSelect.innerHTML = '<option value="">First Document</option>';
+                
+                documents.forEach(doc => {
+                    const option = `<option value="${doc.id}">${doc.filename}</option>`;
+                    askSelect.innerHTML += option;
+                    summarizeSelect.innerHTML += option;
+                });
+                
+            } catch (error) {
+                console.error('Failed to update documents:', error);
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDocuments();
+            
+            // Enter key for chat
+            document.getElementById('chatInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') sendChatMessage();
+            });
+            
+            document.getElementById('generalChatInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') sendGeneralChat();
+            });
+        });
+        
+        // Drag and drop support
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.querySelector('.upload-area');
+            
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.style.background = '#d6dbdf';
+                this.style.borderColor = '#2980b9';
+            });
+            
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                this.style.background = '#ecf0f1';
+                this.style.borderColor = '#3498db';
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.style.background = '#ecf0f1';
+                this.style.borderColor = '#3498db';
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const fileInput = document.getElementById('fileInput');
+                    fileInput.files = files;
+                    handleFileSelect();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
