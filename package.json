@@ -4,8 +4,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js"
+    "start": "node index.js"
   },
   "dependencies": {
     "express": "^4.21.2",
@@ -14,8 +13,5 @@
     "pdf-parse": "^1.1.1",
     "langchain": "^0.0.200",
     "@langchain/openai": "^0.0.22"
-  },
-  "engines": {
-    "node": ">=18.0.0"
   }
 }
