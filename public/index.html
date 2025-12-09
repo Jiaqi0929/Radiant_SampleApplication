@@ -64,8 +64,8 @@
         <div id="Memory" class="tabcontent">
             <h3>Memory Management</h3>
             <button onclick="checkMemory()">Check Memory</button>
-                <button onclick="clearAllMemory()" style="background: #dc3545;">Clear All Memory</button>
-                <div id="memoryResult"></div>
+            <button onclick="clearAllMemory()" style="background: #dc3545;">Clear All Memory</button>
+            <div id="memoryResult"></div>
         </div>
 
         <div id="Documents" class="tabcontent">
@@ -91,7 +91,7 @@
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
             
-            const response = await fetch('/upload', { method: 'POST', body: formData });
+            const response = await fetch('/api/upload', { method: 'POST', body: formData });
             const result = await response.json();
             document.getElementById('uploadResult').innerHTML = `<div class="result"><strong>✅ ${result.message}</strong><br>Document ID: ${result.documentId}<br>Chunks: ${result.chunks}</div>`;
         }
@@ -123,7 +123,7 @@
             document.head.appendChild(style);
 
             try {
-                const response = await fetch('/ask', {
+                const response = await fetch('/api/ask', {  // CHANGED: Added /api/
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ question })
@@ -279,7 +279,7 @@
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-                const response = await fetch('/summarize', {
+                const response = await fetch('/api/summarize', {  // CHANGED: Added /api/
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(requestBody),
@@ -362,7 +362,7 @@
 
         // Helper function to display document IDs
         async function displayDocumentIDs() {
-            const response = await fetch('/documents');
+            const response = await fetch('/api/documents', { method: 'GET' });  // CHANGED: Added /api/
             const result = await response.json();
             
             let html = `<div class="result">
@@ -410,7 +410,7 @@
             document.getElementById('chatResult').innerHTML += loadingHtml;
 
             try {
-                const response = await fetch('/chat', {
+                const response = await fetch('/api/chat', {  // CHANGED: Added /api/
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message, userId: 'user1' })
@@ -476,27 +476,16 @@
             document.getElementById('chatResult').scrollTop = document.getElementById('chatResult').scrollHeight;
         }
 
-        async function check() {
-            const response = await fetch('/memory/user1');
-            const result = await response.json();
-            document.getElementById('memoryResult').innerHTML = `
-                <div class="result">
-                    <strong>🧠 Memory for ${result.userId}:</strong><br>
-                    Messages: ${result.messageCount}<br>
-                    Recent: ${JSON.stringify(result.recentMessages)}
-                </div>`;
-        }
-
         // Clear memory for Chat tab (just clears the display)
         async function clearChatMemory() {
-            await fetch('/memory/user1', { method: 'DELETE' });
+            await fetch('/api/memory/user1', { method: 'DELETE' });  // CHANGED: Added /api/
             document.getElementById('chatResult').innerHTML = '<div class="result">✅ Memory cleared! Start a new conversation.</div>';
         }
 
         // Clear all memory for Memory tab
         async function clearAllMemory() {
             try {
-                const response = await fetch('/memory/user1', { method: 'DELETE' });
+                const response = await fetch('/api/memory/user1', { method: 'DELETE' });  // CHANGED: Added /api/
                 const result = await response.json();
                 
                 document.getElementById('memoryResult').innerHTML = `
@@ -517,7 +506,7 @@
         // Check memory function
         async function checkMemory() {
             try {
-                const response = await fetch('/memory/user1');
+                const response = await fetch('/api/memory/user1', { method: 'GET' });  // CHANGED: Added /api/
                 const result = await response.json();
                 
                 let memoryHtml = '';
@@ -548,7 +537,7 @@
         }
 
         async function loadDocuments() {
-            const response = await fetch('/documents');
+            const response = await fetch('/api/documents', { method: 'GET' });  // CHANGED: Added /api/
             const result = await response.json();
             
             let html = `<div class="result">
