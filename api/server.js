@@ -75,8 +75,8 @@ const documentsMetadata = new Map();
 // ========== ROUTES WITH LANGCHAIN ==========
 
 // Serve frontend
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+app.get("/api/health", (req, res) => {
+  res.json({ status: "healthy" });
 });
 
 // 1. UPLOAD & RAG PROCESSING
@@ -474,3 +474,4 @@ if (process.env.NODE_ENV !== 'production') {
     console.log(`💾 Vector Store: MemoryVectorStore`);
   });
 }
+
