@@ -461,17 +461,18 @@ app.get("/health", (req, res) => {
   });
 });
 
-// Vercel serverless function handler
+
+// ========== EXPORT FOR VERCEL ==========
+// Remove or comment out the app.listen() for Vercel
+// app.listen(PORT, () => {
+//   console.log(`🚀 LangChain RAG System running on http://localhost:${PORT}`);
+//   console.log(`📚 Using Node.js with LangChain`);
+//   console.log(`🔗 Features: RAG, Lightweight LLM, Text Summarization, Memory Management`);
+//   console.log(`🤖 LLM: Google Gemma 2B via OpenRouter`);
+//   console.log(`💾 Vector Store: MemoryVectorStore`);
+// });
+
+// Export for Vercel
 export default app;
 
-// For local development
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`🚀 LangChain RAG System running on http://localhost:${PORT}`);
-    console.log(`📚 Using Node.js with LangChain`);
-    console.log(`🔗 Features: RAG, Lightweight LLM, Text Summarization, Memory Management`);
-    console.log(`🤖 LLM: Google Gemma 2B via OpenRouter`);
-    console.log(`💾 Vector Store: MemoryVectorStore`);
-  });
-}
 
