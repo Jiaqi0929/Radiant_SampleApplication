@@ -30,6 +30,70 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }
 });
 
+// ========== LANGCHAIN SETUP ==========
+
+console.log("🔍 Checking OpenRouter API key...");
+console.log("API Key exists:", !!process.env.OPENROUTER_API_KEY);
+
+let embeddings, chatModel, vectorStore;
+
+try {
+  if (!process.env.OPENROUTER_API_KEY) {
+    console.error("❌ OPENROUTER_API_KEY is missing!");
+    console.log("Please add OPENROUTER_API_KEY to Vercel environment variables");
+  } else {
+    console.log("✅ Initializing LangChain with OpenRouter...");
+    
+    // 1. Embeddings with OpenRouter - FIXED MODEL
+    embeddings = new OpenAIEmbeddings({
+      openAIApiKey: process.env.OPENROUTER_API_KEY,
+      configuration: {
+        baseURL: "https://openrouter.ai/api/v1",
+      },
+      model: "text-embedding-ada-002"  // CHANGED THIS
+    });
+    
+    console.log("✅ Embeddings initialized");
+
+    // 2. Lightweight LLM (Gemma 2B) - FIXED MODEL NAME
+    chatModel = new ChatOpenAI({
+      openAIApiKey: process.env.OPENROUTER_API_KEY,
+      configuration: {
+        baseURL: "https://openrouter.ai/api/v1",
+      },
+      modelName: "google/gemma-2b-it",  // CHANGED TO 2B VERSION
+      temperature: 0.1,
+      maxTokens: 500,  // REDUCED
+      timeout: 30000   // ADDED TIMEOUT
+    });
+    
+    console.log("✅ Chat model initialized");
+
+    // 3. Vector Store for RAG
+    vectorStore = new MemoryVectorStore(embeddings);
+    console.log("✅ Vector store initialized");
+  }
+} catch (error) {
+  console.error("❌ LangChain initialization failed:", error.message);
+  console.error("Full error:", error);
+}
+
+// ========== LANGCHAIN COMPONENTS ==========
+
+// 4. Text Splitter for chunking
+const textSplitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 1000,
+  chunkOverlap: 200,
+});
+
+// 5. Memory Management
+const userMemories = new Map();
+
+// 6. Document Metadata Storage
+const documentsMetadata = new Map();
+
+// ========== ROUTES WITH LANGCHAIN ==========
+
 // Simple test endpoint
 app.get("/api/status", (req, res) => {
   const hasApiKey = !!process.env.OPENROUTER_API_KEY;
@@ -56,73 +120,29 @@ app.get("/api/status", (req, res) => {
   });
 });
 
-// ========== LANGCHAIN SETUP ==========
-
-console.log("🔍 Checking OpenRouter API key...");
-console.log("API Key exists:", !!process.env.OPENROUTER_API_KEY);
-
-let embeddings, chatModel, vectorStore;
-
-try {
-  if (!process.env.OPENROUTER_API_KEY) {
-    console.error("❌ OPENROUTER_API_KEY is missing!");
-    console.log("Please add OPENROUTER_API_KEY to Vercel environment variables");
-  } else {
-    console.log("✅ Initializing LangChain with OpenRouter...");
-    
-    // 1. Embeddings with OpenRouter
-    embeddings = new OpenAIEmbeddings({
-      openAIApiKey: process.env.OPENROUTER_API_KEY,
-      configuration: {
-        baseURL: "https://openrouter.ai/api/v1",
-      },
-      model: "text-embedding-3-small"
-    });
-    
-    console.log("✅ Embeddings initialized");
-
-    // 2. Lightweight LLM (Gemma 2B)
-    chatModel = new ChatOpenAI({
-      openAIApiKey: process.env.OPENROUTER_API_KEY,
-      configuration: {
-        baseURL: "https://openrouter.ai/api/v1",
-      },
-      modelName: "google/gemma-2-9b-it",
-      temperature: 0.1,
-      maxTokens: 1000
-    });
-    
-    console.log("✅ Chat model initialized");
-
-    // 3. Vector Store for RAG
-    vectorStore = new MemoryVectorStore(embeddings);
-    console.log("✅ Vector store initialized");
-  }
-} catch (error) {
-  console.error("❌ LangChain initialization failed:", error.message);
-  console.error("Full error:", error);
-}
-
-// Export for debugging
-global.embeddings = embeddings;
-global.chatModel = chatModel;
-global.vectorStore = vectorStore;
-
-// ========== LANGCHAIN COMPONENTS ==========
-
-// 4. Text Splitter for chunking
-const textSplitter = new RecursiveCharacterTextSplitter({
-  chunkSize: 1000,
-  chunkOverlap: 200,
+// Debug endpoint
+app.get("/api/debug", (req, res) => {
+  res.json({
+    status: "debug",
+    timestamp: new Date().toISOString(),
+    environment: {
+      nodeVersion: process.version,
+      hasOpenRouterKey: !!process.env.OPENROUTER_API_KEY,
+      keyPreview: process.env.OPENROUTER_API_KEY ? 
+        process.env.OPENROUTER_API_KEY.substring(0, 10) + "..." : 
+        "MISSING"
+    },
+    langChain: {
+      embeddings: !!embeddings,
+      chatModel: !!chatModel,
+      vectorStore: !!vectorStore
+    },
+    memory: {
+      users: userMemories.size,
+      documents: documentsMetadata.size
+    }
+  });
 });
-
-// 5. Memory Management
-const userMemories = new Map();
-
-// 6. Document Metadata Storage
-const documentsMetadata = new Map();
-
-// ========== ROUTES WITH LANGCHAIN ==========
 
 // Serve frontend
 app.get("/api/health", (req, res) => {
@@ -202,14 +222,40 @@ app.post("/api/ask", async (req, res) => {
 
     console.log("🔍 Performing RAG query...");
 
-    // LANGCHAIN: Semantic search
-    const relevantDocs = await vectorStore.similaritySearch(question, 4);
-    console.log(`📚 Found ${relevantDocs.length} relevant chunks`);
+    // ADD THIS CHECK
+    if (!vectorStore) {
+      return res.status(503).json({ 
+        error: "AI system not ready",
+        message: "Please check OPENROUTER_API_KEY or try again",
+        details: "Vector store not initialized"
+      });
+    }
+
+    // LANGCHAIN: Semantic search with error handling
+    let relevantDocs = [];
+    try {
+      relevantDocs = await vectorStore.similaritySearch(question, 3);  // REDUCED TO 3
+      console.log(`📚 Found ${relevantDocs.length} relevant chunks`);
+    } catch (searchError) {
+      console.log("⚠️ No documents in vector store");
+      relevantDocs = [];
+    }
 
     // Build context
     const context = relevantDocs.map((doc, index) => 
-      `[Source ${index + 1} from "${doc.metadata.source}"]:\n${doc.pageContent}\n`
+      `[Source ${index + 1} from "${doc.metadata?.source || 'document'}"]:\n${doc.pageContent}\n`
     ).join("\n");
+
+    // ADD THIS CHECK
+    if (!chatModel) {
+      return res.json({
+        answer: "AI model is still loading. Please try again in a moment.",
+        sources: [],
+        userId: userId,
+        relevantChunks: 0,
+        modelStatus: "loading"
+      });
+    }
 
     // Get or create user memory
     if (!userMemories.has(userId)) {
@@ -247,16 +293,30 @@ app.post("/api/ask", async (req, res) => {
 
     Please provide a helpful, well-formatted response:`;
 
-    // LANGCHAIN: Generate response
-    const response = await chain.call({ input: ragPrompt });
+     // LANGCHAIN: Generate response with timeout
+    let response;
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      
+      response = await chain.call({ 
+        input: ragPrompt,
+        signal: controller.signal 
+      });
+      
+      clearTimeout(timeout);
+    } catch (aiError) {
+      console.error("AI generation error:", aiError);
+      response = { response: "I'm having trouble generating a response right now." };
+    }
 
     res.json({
       answer: response.response,
       sources: relevantDocs.map(doc => ({
-        source: doc.metadata.source,
-        page: doc.metadata.loc?.pageNumber || 'N/A',
-        contentPreview: doc.pageContent.substring(0, 150) + '...',
-        chunkId: doc.metadata.chunkId
+        source: doc.metadata?.source || 'Unknown',
+        page: doc.metadata?.loc?.pageNumber || 'N/A',
+        contentPreview: doc.pageContent?.substring(0, 150) + '...' || '',
+        chunkId: doc.metadata?.chunkId || 'unknown'
       })),
       userId: userId,
       relevantChunks: relevantDocs.length
@@ -264,7 +324,10 @@ app.post("/api/ask", async (req, res) => {
 
   } catch (error) {
     console.error("RAG Query error:", error);
-    res.status(500).json({ error: "RAG query failed: " + error.message });
+    res.status(500).json({ 
+      error: "RAG query failed",
+      message: error.message
+    });
   }
 });
 
@@ -478,7 +541,6 @@ app.delete("/api/memory/:userId", (req, res) => {
     });
   }
 });
-
 
 // 6. DOCUMENT MANAGEMENT
 app.get("/api/documents", (req, res) => {
