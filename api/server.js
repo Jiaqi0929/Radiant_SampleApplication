@@ -1,8 +1,7 @@
 import express from "express";
 import multer from "multer";
 import dotenv from "dotenv";
-import { fileURLToPath } from "url";
-import path from "path";
+import cors from "cors";
 import { v4 as uuidv4 } from "uuid";
 
 // ========== LANGCHAIN IMPORTS ==========
@@ -20,15 +19,11 @@ import { RunnableSequence } from "@langchain/core/runnables";
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Middleware - IMPORTANT for Vercel
+app.use(cors());
 app.use(express.json());
-app.use(express.static(process.cwd()));
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -80,7 +75,7 @@ app.get("/api/health", (req, res) => {
 });
 
 // 1. UPLOAD & RAG PROCESSING
-app.post("/upload", upload.single("file"), async (req, res) => {
+app.post("/api/upload", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
@@ -136,7 +131,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 });
 
 // 2. RAG QUERY (Retrieval Augmented Generation)
-app.post("/ask", async (req, res) => {
+app.post("/api/ask", async (req, res) => {
   try {
     const { question, userId = "default" } = req.body;
     if (!question) return res.status(400).json({ error: "No question provided" });
@@ -210,7 +205,7 @@ app.post("/ask", async (req, res) => {
 });
 
 // 3. TEXT SUMMARIZATION
-app.post("/summarize", async (req, res) => {
+app.post("/api/summarize", async (req, res) => {
   try {
     const { text, documentId } = req.body;
 
@@ -310,7 +305,7 @@ SUMMARY:`);
 });
 
 // 4. CHAT WITH MEMORY MANAGEMENT
-app.post("/chat", async (req, res) => {
+app.post("/api/chat", async (req, res) => {
   try {
     const { message, userId = "default", clearMemory = false } = req.body;
     if (!message) return res.status(400).json({ error: "No message provided" });
@@ -352,7 +347,7 @@ app.post("/chat", async (req, res) => {
 });
 
 // 5. MEMORY MANAGEMENT
-app.get("/memory/:userId", async (req, res) => {
+app.get("/api/memory/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
     
@@ -390,7 +385,7 @@ app.get("/memory/:userId", async (req, res) => {
   }
 });
 
-app.delete("/memory/:userId", (req, res) => {
+app.delete("/api/memory/:userId", (req, res) => {
   try {
     const { userId } = req.params;
     
@@ -422,7 +417,7 @@ app.delete("/memory/:userId", (req, res) => {
 
 
 // 6. DOCUMENT MANAGEMENT
-app.get("/documents", (req, res) => {
+app.get("/api/documents", (req, res) => {
   const documents = Array.from(documentsMetadata.values());
   res.json({
     totalDocuments: documents.length,
@@ -431,7 +426,7 @@ app.get("/documents", (req, res) => {
 });
 
 // 7. HEALTH CHECK
-app.get("/health", (req, res) => {
+app.get("/api/healthh", (req, res) => {
   res.json({
     status: "healthy",
     timestamp: new Date().toISOString(),
@@ -474,5 +469,6 @@ app.get("/health", (req, res) => {
 
 // Export for Vercel
 export default app;
+
 
 
