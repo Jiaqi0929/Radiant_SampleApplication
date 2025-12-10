@@ -456,6 +456,27 @@ app.get("/api/healthh", (req, res) => {
   });
 });
 
+app.get("/api", (req, res) => {
+  res.json({ 
+    message: "RAG LangChain API is running!",
+    endpoints: [
+      "GET /api/health - Basic health check",
+      "GET /api/healthh - Detailed health check",
+      "POST /api/upload - Upload PDF for RAG processing",
+      "POST /api/ask - Ask questions about documents",
+      "POST /api/summarize - Summarize text or documents",
+      "POST /api/chat - Chat with memory",
+      "GET /api/documents - List uploaded documents",
+      "GET /api/memory/:userId - Get conversation memory",
+      "DELETE /api/memory/:userId - Clear memory"
+    ],
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get("/api/health", (req, res) => {
+  res.json({ status: "healthy", timestamp: new Date().toISOString() });
+});
 
 // ========== EXPORT FOR VERCEL ==========
 // Remove or comment out the app.listen() for Vercel
@@ -469,6 +490,7 @@ app.get("/api/healthh", (req, res) => {
 
 // Export for Vercel
 export default app;
+
 
 
 
