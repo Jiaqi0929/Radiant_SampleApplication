@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/*.js": {
+    "api/index.js": {
       "maxDuration": 30
     }
   },
@@ -10,8 +10,8 @@
       "destination": "/api/index.js"
     },
     {
-      "source": "/(.*)",
-      "destination": "/public/index.html"
+      "source": "/",
+      "destination": "/api/index.js"
     }
   ]
 }
