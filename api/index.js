@@ -30,6 +30,31 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }
 });
 
+app.get("/api/status", (req, res) => {
+  const hasApiKey = !!process.env.OPENROUTER_API_KEY;
+  const langChainReady = !!(embeddings && chatModel && vectorStore);
+  
+  res.json({
+    api: "RAG LangChain System",
+    status: "running",
+    timestamp: new Date().toISOString(),
+    environment: {
+      nodeVersion: process.version,
+      openRouterApiKey: hasApiKey ? "configured" : "MISSING",
+      langChain: langChainReady ? "ready" : "not ready"
+    },
+    endpoints: {
+      health: "/api/health",
+      status: "/api/status",
+      upload: "/api/upload",
+      ask: "/api/ask",
+      summarize: "/api/summarize",
+      chat: "/api/chat",
+      documents: "/api/documents"
+    }
+  });
+});
+
 // ========== LANGCHAIN SETUP ==========
 
 console.log("🔍 Checking OpenRouter API key...");
@@ -93,6 +118,15 @@ app.get("/api/health", (req, res) => {
 app.post("/api/upload", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+    
+    // Check if LangChain is initialized
+    if (!embeddings || !chatModel || !vectorStore) {
+      return res.status(503).json({ 
+        error: "LangChain not initialized",
+        message: "Please check OPENROUTER_API_KEY environment variable",
+        help: "Add your OpenRouter API key in Vercel project settings"
+      });
+    }
 
     console.log("🔄 Processing PDF with LangChain...");
 
@@ -505,6 +539,7 @@ app.get("/api/health", (req, res) => {
 
 // Export for Vercel
 export default app;
+
 
 
 
