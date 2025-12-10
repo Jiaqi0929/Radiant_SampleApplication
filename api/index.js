@@ -32,40 +32,55 @@ const upload = multer({
 
 // ========== LANGCHAIN SETUP ==========
 
-// 1. Embeddings with OpenRouter
-const embeddings = new OpenAIEmbeddings({
-  openAIApiKey: process.env.OPENROUTER_API_KEY,
-  configuration: {
-    baseURL: "https://openrouter.ai/api/v1",
-  },
-  model: "text-embedding-3-small"
-});
+console.log("🔍 Checking OpenRouter API key...");
+console.log("API Key exists:", !!process.env.OPENROUTER_API_KEY);
 
-// 2. Lightweight LLM (Gemma 2B)
-const chatModel = new ChatOpenAI({
-  openAIApiKey: process.env.OPENROUTER_API_KEY,
-  configuration: {
-    baseURL: "https://openrouter.ai/api/v1",
-  },
-  modelName: "google/gemma-2-9b-it",
-  temperature: 0.1,
-  maxTokens: 1000
-});
+let embeddings, chatModel, vectorStore;
 
-// 3. Vector Store for RAG
-let vectorStore = new MemoryVectorStore(embeddings);
+try {
+  if (!process.env.OPENROUTER_API_KEY) {
+    console.error("❌ OPENROUTER_API_KEY is missing!");
+    console.log("Please add OPENROUTER_API_KEY to Vercel environment variables");
+  } else {
+    console.log("✅ Initializing LangChain with OpenRouter...");
+    
+    // 1. Embeddings with OpenRouter
+    embeddings = new OpenAIEmbeddings({
+      openAIApiKey: process.env.OPENROUTER_API_KEY,
+      configuration: {
+        baseURL: "https://openrouter.ai/api/v1",
+      },
+      model: "text-embedding-3-small"
+    });
+    
+    console.log("✅ Embeddings initialized");
 
-// 4. Text Splitter for chunking
-const textSplitter = new RecursiveCharacterTextSplitter({
-  chunkSize: 1000,
-  chunkOverlap: 200,
-});
+    // 2. Lightweight LLM (Gemma 2B)
+    chatModel = new ChatOpenAI({
+      openAIApiKey: process.env.OPENROUTER_API_KEY,
+      configuration: {
+        baseURL: "https://openrouter.ai/api/v1",
+      },
+      modelName: "google/gemma-2-9b-it",
+      temperature: 0.1,
+      maxTokens: 1000
+    });
+    
+    console.log("✅ Chat model initialized");
 
-// 5. Memory Management
-const userMemories = new Map();
+    // 3. Vector Store for RAG
+    vectorStore = new MemoryVectorStore(embeddings);
+    console.log("✅ Vector store initialized");
+  }
+} catch (error) {
+  console.error("❌ LangChain initialization failed:", error.message);
+  console.error("Full error:", error);
+}
 
-// 6. Document Metadata Storage
-const documentsMetadata = new Map();
+// Export for debugging
+global.embeddings = embeddings;
+global.chatModel = chatModel;
+global.vectorStore = vectorStore;
 
 // ========== ROUTES WITH LANGCHAIN ==========
 
@@ -490,6 +505,7 @@ app.get("/api/health", (req, res) => {
 
 // Export for Vercel
 export default app;
+
 
 
 
