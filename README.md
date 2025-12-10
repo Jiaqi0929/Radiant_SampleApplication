@@ -1,1 +1,0 @@
-# Radiant_SampleApplication
