@@ -30,6 +30,7 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }
 });
 
+// Simple test endpoint
 app.get("/api/status", (req, res) => {
   const hasApiKey = !!process.env.OPENROUTER_API_KEY;
   const langChainReady = !!(embeddings && chatModel && vectorStore);
@@ -106,6 +107,20 @@ try {
 global.embeddings = embeddings;
 global.chatModel = chatModel;
 global.vectorStore = vectorStore;
+
+// ========== LANGCHAIN COMPONENTS ==========
+
+// 4. Text Splitter for chunking
+const textSplitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 1000,
+  chunkOverlap: 200,
+});
+
+// 5. Memory Management
+const userMemories = new Map();
+
+// 6. Document Metadata Storage
+const documentsMetadata = new Map();
 
 // ========== ROUTES WITH LANGCHAIN ==========
 
@@ -528,20 +543,4 @@ app.get("/api/health", (req, res) => {
 });
 
 // ========== EXPORT FOR VERCEL ==========
-// Remove or comment out the app.listen() for Vercel
-// app.listen(PORT, () => {
-//   console.log(`🚀 LangChain RAG System running on http://localhost:${PORT}`);
-//   console.log(`📚 Using Node.js with LangChain`);
-//   console.log(`🔗 Features: RAG, Lightweight LLM, Text Summarization, Memory Management`);
-//   console.log(`🤖 LLM: Google Gemma 2B via OpenRouter`);
-//   console.log(`💾 Vector Store: MemoryVectorStore`);
-// });
-
-// Export for Vercel
 export default app;
-
-
-
-
-
-
