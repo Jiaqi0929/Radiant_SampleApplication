@@ -3,7 +3,6 @@ import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { ChatOpenAI } from "@langchain/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { BufferMemory } from "langchain/memory";
 
 let _cache = global.__RAG_CACHE || {};
 global.__RAG_CACHE = _cache;
@@ -16,12 +15,11 @@ export async function initLangChain() {
     console.warn("OPENROUTER_API_KEY missing");
   }
 
-  // Initialize embeddings & model (lazy)
   try {
     const embeddings = new OpenAIEmbeddings({
       openAIApiKey: OPENROUTER_KEY,
       configuration: { baseURL: "https://openrouter.ai/api/v1" },
-      model: "text-embedding-3-small"
+      model: "text-embedding-3-small",
     });
 
     const chatModel = new ChatOpenAI({
@@ -30,30 +28,26 @@ export async function initLangChain() {
       modelName: "google/gemma-2b-it",
       temperature: 0.1,
       maxTokens: 500,
-      timeout: 30000
+      timeout: 30000,
     });
 
     const vectorStore = new MemoryVectorStore(embeddings);
     const textSplitter = new RecursiveCharacterTextSplitter({
       chunkSize: 1000,
-      chunkOverlap: 200
+      chunkOverlap: 200,
     });
-
-    const userMemories = new Map();
-    const documentsMetadata = new Map();
 
     _cache = {
       embeddings,
       chatModel,
       vectorStore,
       textSplitter,
-      userMemories,
-      documentsMetadata,
-      ready: true
+      userMemories: new Map(),
+      documentsMetadata: new Map(),
+      ready: true,
     };
-
     global.__RAG_CACHE = _cache;
-    console.log("LangChain initialized (cached).");
+    console.log("LangChain initialized.");
   } catch (e) {
     console.error("Failed to initialize LangChain:", e);
     _cache.ready = false;
@@ -61,5 +55,3 @@ export async function initLangChain() {
 
   return _cache;
 }
-
-
