@@ -21,7 +21,7 @@ export async function initLangChain() {
     const embeddings = new OpenAIEmbeddings({
       openAIApiKey: OPENROUTER_KEY,
       configuration: { baseURL: "https://openrouter.ai/api/v1" },
-      model: "text-embedding-ada-002"
+      model: "text-embedding-3-small"
     });
 
     const chatModel = new ChatOpenAI({
@@ -61,4 +61,5 @@ export async function initLangChain() {
 
   return _cache;
 }
+
 
