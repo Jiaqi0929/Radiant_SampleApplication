@@ -4,33 +4,58 @@ import { ConversationChain } from "langchain/chains";
 import { BufferMemory } from "langchain/memory";
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-  const { question, userId = "default" } = req.body || {};
-  if (!question) return res.status(400).json({ error: "No question provided" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  // Safe body parsing
+  let body = {};
+  try {
+    body = req.body ?? {};
+  } catch {
+    body = {};
+  }
+
+  const question = body.question;
+  const userId = body.userId || "default";
+
+  if (!question || typeof question !== "string") {
+    return res.status(400).json({ error: "Invalid or missing question" });
+  }
 
   const cache = await initLangChain();
-  if (!cache.ready) return res.status(503).json({ error: "LangChain not initialized" });
+  if (!cache.ready) {
+    return res.status(503).json({ error: "LangChain not initialized" });
+  }
 
-  // find similar docs (safe even when empty)
+  // Similarity search (safe)
   let relevantDocs = [];
   try {
     relevantDocs = await cache.vectorStore.similaritySearch(question, 3);
   } catch (e) {
-    console.warn("similaritySearch error", e);
-    relevantDocs = [];
+    console.warn("similaritySearch error:", e);
   }
 
-  const context = relevantDocs.map((doc, i) => 
-    `[Source ${i+1} from "${doc.metadata?.source || 'doc'}"]:\n${doc.pageContent}\n`
-  ).join("\n");
+  const context = relevantDocs
+    .map(
+      (doc, i) =>
+        `[Source ${i + 1} from "${doc.metadata?.source || "doc"}"]:\n${doc.pageContent}\n`
+    )
+    .join("\n");
 
-  // memory
+  // Memory
   if (!cache.userMemories.has(userId)) {
-    cache.userMemories.set(userId, new BufferMemory({ returnMessages: true, memoryKey: "history" }));
+    cache.userMemories.set(
+      userId,
+      new BufferMemory({ returnMessages: true, memoryKey: "history" })
+    );
   }
   const memory = cache.userMemories.get(userId);
 
-  const chain = new ConversationChain({ llm: cache.chatModel, memory });
+  const chain = new ConversationChain({
+    llm: cache.chatModel,
+    memory
+  });
 
   const ragPrompt = `
 CONTEXT FROM DOCUMENTS:
@@ -50,11 +75,22 @@ INSTRUCTIONS:
     response = await chain.call({ input: ragPrompt });
   } catch (e) {
     console.error("AI generation error:", e);
-    return res.status(500).json({ error: "AI generation failed", message: e.message });
+    return res.status(500).json({
+      error: "AI generation failed",
+      message: e.message
+    });
+  }
+
+  // ✅ SAFE response extraction
+  let answer = "";
+  if (typeof response === "string") {
+    answer = response;
+  } else {
+    answer = response?.response || response?.output || "";
   }
 
   return res.json({
-    answer: response.response || response.output || "",
+    answer,
     sources: relevantDocs.map(doc => ({
       source: doc.metadata?.source || "Unknown",
       page: doc.metadata?.loc?.pageNumber || "N/A",
