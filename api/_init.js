@@ -1,7 +1,4 @@
 // api/_init.js
-import dotenv from "dotenv";
-dotenv.config();
-
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { ChatOpenAI } from "@langchain/openai";
@@ -64,3 +61,4 @@ export async function initLangChain() {
 
   return _cache;
 }
+
