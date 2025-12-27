@@ -4,11 +4,8 @@ import { ConversationChain } from "langchain/chains";
 import { BufferMemory } from "langchain/memory";
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  // Safe body parsing
   let body = {};
   try {
     body = req.body ?? {};
@@ -24,11 +21,8 @@ export default async function handler(req, res) {
   }
 
   const cache = await initLangChain();
-  if (!cache.ready) {
-    return res.status(503).json({ error: "LangChain not initialized" });
-  }
+  if (!cache.ready) return res.status(503).json({ error: "LangChain not initialized" });
 
-  // Similarity search (safe)
   let relevantDocs = [];
   try {
     relevantDocs = await cache.vectorStore.similaritySearch(question, 3);
@@ -43,23 +37,19 @@ export default async function handler(req, res) {
     )
     .join("\n");
 
-  // Memory
   if (!cache.userMemories.has(userId)) {
     cache.userMemories.set(
       userId,
       new BufferMemory({ returnMessages: true, memoryKey: "history" })
     );
   }
-  const memory = cache.userMemories.get(userId);
 
-  const chain = new ConversationChain({
-    llm: cache.chatModel,
-    memory
-  });
+  const memory = cache.userMemories.get(userId);
+  const chain = new ConversationChain({ llm: cache.chatModel, memory });
 
   const ragPrompt = `
 CONTEXT FROM DOCUMENTS:
-${context}
+${context || "NO DOCUMENT CONTEXT AVAILABLE."}
 
 USER QUESTION: ${question}
 
@@ -75,19 +65,10 @@ INSTRUCTIONS:
     response = await chain.call({ input: ragPrompt });
   } catch (e) {
     console.error("AI generation error:", e);
-    return res.status(500).json({
-      error: "AI generation failed",
-      message: e.message
-    });
+    return res.status(500).json({ error: "AI generation failed", message: e.message });
   }
 
-  // ✅ SAFE response extraction
-  let answer = "";
-  if (typeof response === "string") {
-    answer = response;
-  } else {
-    answer = response?.response || response?.output || "";
-  }
+  const answer = typeof response === "string" ? response : response?.response || response?.output || "";
 
   return res.json({
     answer,
@@ -95,9 +76,9 @@ INSTRUCTIONS:
       source: doc.metadata?.source || "Unknown",
       page: doc.metadata?.loc?.pageNumber || "N/A",
       contentPreview: (doc.pageContent || "").substring(0, 150) + "...",
-      chunkId: doc.metadata?.chunkId || "unknown"
+      chunkId: doc.metadata?.chunkId || "unknown",
     })),
     userId,
-    relevantChunks: relevantDocs.length
+    relevantChunks: relevantDocs.length,
   });
 }
