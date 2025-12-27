@@ -88,12 +88,77 @@
 
         async function uploadFile() {
             const fileInput = document.getElementById('fileInput');
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
+            const file = fileInput.files[0];
             
-            const response = await fetch('/api/upload', { method: 'POST', body: formData });
-            const result = await response.json();
-            document.getElementById('uploadResult').innerHTML = `<div class="result"><strong>✅ ${result.message}</strong><br>Document ID: ${result.documentId}<br>Chunks: ${result.chunks}</div>`;
+            if (!file) {
+                alert('Please select a PDF file');
+                return;
+            }
+        
+            // Show loading
+            document.getElementById('uploadResult').innerHTML = `
+                <div class="result">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 20px; height: 20px; border: 2px solid #f3f3f3; border-top: 2px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <div>📄 Processing PDF... This may take a moment</div>
+                    </div>
+                </div>`;
+        
+            try {
+                // Convert file to base64
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const base64 = e.target.result.split(',')[1]; // Remove data URL prefix
+                    
+                    const response = await fetch('/api/upload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            pdfBase64: base64,
+                            filename: file.name
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        document.getElementById('uploadResult').innerHTML = `
+                            <div class="result" style="border-left-color: #28a745;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                    <div style="width: 32px; height: 32px; background: #28a745; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">✅</div>
+                                    <strong style="color: #28a745;">Success!</strong>
+                                </div>
+                                <div>${result.message}</div>
+                                <div class="stats">
+                                    Document ID: <code style="background: #007bff; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer;" onclick="copyToClipboard('${result.documentId}')">${result.documentId}</code><br>
+                                    Filename: ${result.filename}<br>
+                                    Chunks: ${result.chunks}
+                                </div>
+                            </div>`;
+                    } else {
+                        document.getElementById('uploadResult').innerHTML = `
+                            <div class="result" style="border-left-color: #dc3545;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                    <div style="width: 32px; height: 32px; background: #dc3545; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">❌</div>
+                                    <strong style="color: #dc3545;">Error</strong>
+                                </div>
+                                <div>${result.error || 'Upload failed'}</div>
+                            </div>`;
+                    }
+                };
+                
+                reader.readAsDataURL(file);
+            } catch (error) {
+                console.error('Upload error:', error);
+                document.getElementById('uploadResult').innerHTML = `
+                    <div class="result" style="border-left-color: #dc3545;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <div style="width: 32px; height: 32px; background: #dc3545; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">❌</div>
+                            <strong style="color: #dc3545;">Error</strong>
+                        </div>
+                        <div>${error.message}</div>
+                    </div>`;
+            }
         }
 
         async function askQuestion() {
@@ -604,3 +669,4 @@
     </script>
 </body>
 </html>
+
